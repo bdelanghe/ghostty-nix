@@ -54,12 +54,29 @@ in
       type = lib.types.listOf lib.types.str;
       default = [
         "global:cmd+grave_accent=toggle_quick_terminal"
+
+        # KEPT, and NOT a duplicate of Ghostty's default — this is the trap.
+        # `ghostty +list-keybinds --default` reports `super+c=copy_to_clipboard:mixed`.
+        # This line binds plain `copy_to_clipboard`, WITHOUT `:mixed`. Deleting
+        # it as "redundant" would not restore a default, it would change copy
+        # behaviour. Verified against the installed binary, 2026-09-11.
         "cmd+c=copy_to_clipboard"
-        "cmd+v=paste_from_clipboard"
-        "super+alt+h=goto_split:left"
-        "super+alt+j=goto_split:down"
-        "super+alt+k=goto_split:up"
-        "super+alt+l=goto_split:right"
+
+        # REMOVED 2026-09-11:
+        #
+        #   cmd+v=paste_from_clipboard
+        #     A true duplicate — the default is `super+v=paste_from_clipboard`,
+        #     identical, and super is cmd on macOS. Checked against the binary,
+        #     not assumed from its neighbour above.
+        #
+        #   super+alt+{h,j,k,l}=goto_split:{left,down,up,right}
+        #     Dead: nothing here ever creates a split, so all four were bound to
+        #     a navigation that had nowhere to go. They also have no future:
+        #     lobby owns layout, Ghostty owns pixels, and a second surface is a
+        #     second WINDOW rather than a pane. Note Ghostty's `unbind` only
+        #     forwards a key to the child if it is printable, so these were not
+        #     merely inert — they made four chords dead rather than passing them
+        #     through to the application beneath.
       ];
       description = ''
         Ghostty's `keybind` entries, emitted as repeated `keybind = ` lines.
@@ -109,10 +126,18 @@ in
         font-size = cfg.fontSize;
         font-thicken = true;
 
-        # High contrast: pure black/white, fully opaque, no blur, and a floor on
-        # text contrast so no theme color can go muddy.
-        background = "#000000";
-        foreground = "#ffffff";
+        # High contrast, fully opaque, no blur, and a floor on text contrast so
+        # no theme color can go muddy.
+        #
+        # Near-black and off-white rather than #000000/#ffffff (changed
+        # 2026-09-11). Pure black against pure white is the maximum the display
+        # can produce, which reads as glare rather than as legibility: on an OLED
+        # or a high-brightness panel the #fff glyph edges bloom against a #000
+        # field and the text shimmers on long reads. Pulling both ends in one
+        # step keeps the contrast ratio far above any legibility threshold —
+        # `minimum-contrast = 3` below still holds — while removing the halation.
+        background = "#0e0e0e";
+        foreground = "#e4e4e4";
         background-opacity = 1.0;
         minimum-contrast = 3;
         window-colorspace = "display-p3";
